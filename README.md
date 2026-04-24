@@ -161,9 +161,9 @@ git clone https://github.com/BRIGHTZ-SEC/BeatQuiz.git
 cd BeatQuiz
 
 # Buka file-nya:
-open music-quiz.html        # macOS
-start music-quiz.html       # Windows
-xdg-open music-quiz.html    # Linux
+open BeatQuiz.html        # macOS
+start BeatQuiz.html       # Windows
+xdg-open BeatQuiz.html    # Linux
 ```
 
 ### Cara 2 — GitHub Pages
@@ -173,18 +173,13 @@ xdg-open music-quiz.html    # Linux
 4. Klik **Save** → tunggu sekitar 1 menit
 5. Akses di `https://username.github.io/BeatQuiz`
 
-### Cara 3 — Netlify Drop (Paling Cepat)
-1. Download ZIP repo ini dari GitHub
-2. Buka [app.netlify.com/drop](https://app.netlify.com/drop)
-3. Drag & drop folder → langsung live dengan URL publik
-
 ---
 
 ## 🏗️ Struktur Proyek
 
 ```
 BeatQuiz/
-├── music-quiz.html   ← Seluruh game dalam satu file
+├── BeatQuiz.html   ← Seluruh game dalam satu file
 └── README.md         ← Dokumentasi ini
 ```
 
@@ -194,7 +189,7 @@ BeatQuiz/
 
 ## 🛠️ Cara Tambah Lagu Baru
 
-Buka `music-quiz.html`, cari array `SONGS`, dan tambahkan entry baru:
+Buka `BeatQuiz.html`, cari array `SONGS`, dan tambahkan entry baru:
 
 ```javascript
 const SONGS = [
@@ -262,7 +257,7 @@ Pull request sangat welcome! Untuk perubahan besar, buka issue dulu ya.
 # 1. Fork repo ini lewat GitHub
 
 # 2. Clone fork kamu
-git clone https://github.com/USERNAME/BeatQuiz.git
+git clone https://github.com/BRIGHTZ-SEC/BeatQuiz.git
 
 # 3. Buat branch baru
 git checkout -b fitur/nama-fitur-keren
@@ -286,7 +281,7 @@ Distributed under the **MIT License** — bebas dipakai, dimodifikasi, dan didis
 
 <div align="center">
 
-Made with ❤️ by [BRIGHTZ-SEC](https://github.com/BRIGHTZ-SEC)
+Made for michie and erine by [BRIGHTZ-SEC](https://github.com/BRIGHTZ-SEC)
 
 **[⭐ Star repo ini kalau suka!](https://github.com/BRIGHTZ-SEC/BeatQuiz)**
 
