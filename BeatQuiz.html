@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeatQuiz — Music Quiz Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #f59e0b;
+  --purple: #a78bfa;
+  --green: #34d399;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --pink: #f472b6;
+  --bg: #06060f;
+  --card: rgba(255,255,255,0.05);
+  --border: rgba(255,255,255,0.1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;overflow:hidden}
+body{font-family:'Outfit',sans-serif;color:#fff}
+
+canvas#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+
+#app{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column}
+
+/* ========= SCREENS ========= */
+.screen{display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;padding:2vh 3vw}
+.screen.active{display:flex}
+
+/* ========= MENU ========= */
+#s-menu{gap:2vh}
+.logo{font-family:'Bebas Neue',cursive;font-size:clamp(48px,8vw,120px);letter-spacing:6px;line-height:1;text-align:center}
+.logo .b1{color:#fff}.logo .b2{color:var(--gold)}.logo .b3{color:var(--purple)}
+.logo-sub{font-size:clamp(11px,1.3vw,16px);letter-spacing:6px;color:rgba(255,255,255,0.3);text-transform:uppercase;text-align:center}
+.menu-cards{display:flex;gap:clamp(10px,2vw,20px);margin-top:3vh;flex-wrap:wrap;justify-content:center}
+.mode-card{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:clamp(14px,2vh,24px) clamp(18px,2.5vw,32px);
+  cursor:pointer;transition:all .25s;text-align:center;min-width:clamp(130px,18vw,200px);
+}
+.mode-card:hover{transform:translateY(-4px) scale(1.03);border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.09)}
+.mode-card.selected{border-color:var(--gold);background:rgba(245,158,11,0.1)}
+.mode-icon{font-size:clamp(22px,3.5vw,40px);display:block;margin-bottom:8px}
+.mode-name{font-family:'Bebas Neue',cursive;font-size:clamp(14px,1.8vw,22px);letter-spacing:2px}
+.mode-desc{font-size:clamp(9px,1vw,12px);color:rgba(255,255,255,0.4);margin-top:4px}
+
+.start-btn{
+  background:var(--gold);border:none;border-radius:14px;
+  padding:clamp(12px,1.8vh,20px) clamp(40px,6vw,80px);
+  color:#0a0a0f;font-family:'Bebas Neue',cursive;
+  font-size:clamp(16px,2.2vw,28px);letter-spacing:3px;
+  cursor:pointer;transition:all .2s;margin-top:2vh;
+}
+.start-btn:hover{background:#fbbf24;transform:scale(1.06)}
+.start-btn:active{transform:scale(0.96)}
+
+.stats-preview{display:flex;gap:clamp(8px,1.5vw,16px);margin-top:1.5vh}
+.sp-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;text-align:center}
+.sp-v{font-family:'Bebas Neue',cursive;font-size:clamp(16px,2vw,24px);color:var(--gold)}
+.sp-l{font-size:clamp(8px,0.9vw,10px);color:rgba(255,255,255,0.3);letter-spacing:2px}
+
+/* ========= GAME ========= */
+#s-game{gap:0;padding:0;justify-content:flex-start}
+
+.topbar{
+  width:100%;display:flex;align-items:center;gap:clamp(8px,1.5vw,16px);
+  padding:clamp(8px,1.2vh,14px) clamp(12px,2vw,24px);
+  background:rgba(0,0,0,0.4);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(10px);flex-shrink:0;
+}
+.prog-wrap{flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;background:var(--purple);transition:width .4s ease}
+.topbar-score{font-family:'Bebas Neue',cursive;font-size:clamp(16px,2.2vw,28px);color:var(--gold);white-space:nowrap}
+.topbar-q{font-size:clamp(9px,1vw,12px);color:rgba(255,255,255,0.35);letter-spacing:2px;white-space:nowrap}
+.topbar-timer{
+  font-family:'Bebas Neue',cursive;font-size:clamp(20px,2.5vw,32px);
+  min-width:48px;text-align:center;
+  transition:color .3s;
+}
+.topbar-streak{display:flex;align-items:center;gap:4px;font-size:clamp(9px,1.1vw,13px);font-weight:700;color:var(--gold);white-space:nowrap}
+
+.game-body{
+  flex:1;width:100%;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:clamp(10px,2vh,24px) clamp(16px,4vw,60px);gap:clamp(10px,1.8vh,20px);
+  overflow:hidden;
+}
+
+.artist-badge{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);border:1px solid var(--border);border-radius:50px;
+  padding:6px 16px 6px 8px;
+}
+.artist-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.artist-label{font-size:clamp(10px,1.2vw,14px);font-weight:600;letter-spacing:2px}
+
+.song-display{
+  background:var(--card);border:1px solid var(--border);border-radius:20px;
+  padding:clamp(14px,2vh,24px) clamp(20px,3vw,40px);
+  display:flex;align-items:center;gap:clamp(12px,2vw,24px);
+  width:min(560px,90%);
+  backdrop-filter:blur(12px);
+}
+.song-thumb{width:clamp(50px,7vw,80px);height:clamp(50px,7vw,80px);border-radius:12px;object-fit:cover;flex-shrink:0}
+.song-title{font-family:'Bebas Neue',cursive;font-size:clamp(16px,2.2vw,28px);letter-spacing:1px;line-height:1.1}
+.song-hint{font-size:clamp(9px,1.1vw,13px);color:rgba(255,255,255,0.35);margin-top:4px}
+.eq{display:flex;gap:3px;align-items:flex-end;height:18px;margin-top:6px;flex-shrink:0}
+.eq span{width:3px;background:var(--gold);border-radius:2px;animation:eq .7s ease-in-out infinite alternate}
+.eq span:nth-child(2){animation-delay:.12s}.eq span:nth-child(3){animation-delay:.25s}
+.eq span:nth-child(4){animation-delay:.08s}.eq span:nth-child(5){animation-delay:.3s}
+@keyframes eq{from{height:3px}to{height:16px}}
+
+.q-label{font-size:clamp(10px,1.2vw,14px);color:rgba(255,255,255,0.4);letter-spacing:3px;text-transform:uppercase}
+
+.choices{
+  display:grid;grid-template-columns:1fr 1fr;gap:clamp(8px,1.2vw,14px);
+  width:min(600px,92%);
+}
+.choice{
+  background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.1);
+  border-radius:14px;padding:clamp(10px,1.5vh,18px) clamp(14px,2vw,22px);
+  cursor:pointer;transition:all .18s;font-size:clamp(11px,1.3vw,16px);
+  font-weight:600;text-align:left;display:flex;align-items:center;gap:10px;
+}
+.choice:hover:not(.locked){background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.25);transform:scale(1.02)}
+.choice.correct{background:rgba(52,211,153,0.15);border-color:var(--green);color:var(--green);animation:popCorrect .4s ease}
+.choice.wrong{background:rgba(248,113,113,0.12);border-color:var(--red);color:var(--red)}
+.choice.locked{pointer-events:none}
+.choice-letter{
+  width:clamp(22px,2.5vw,30px);height:clamp(22px,2.5vw,30px);border-radius:8px;
+  background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',cursive;font-size:clamp(13px,1.5vw,18px);flex-shrink:0;
+  transition:background .18s;
+}
+.choice.correct .choice-letter{background:var(--green);color:#0a0a0f}
+.choice.wrong .choice-letter{background:var(--red);color:#0a0a0f}
+@keyframes popCorrect{0%{transform:scale(1)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
+
+.feedback-banner{
+  font-family:'Bebas Neue',cursive;font-size:clamp(14px,2vw,24px);
+  letter-spacing:2px;min-height:clamp(18px,2.5vh,30px);
+  transition:opacity .3s;text-align:center;
+}
+
+.bottom-bar{
+  width:100%;display:flex;justify-content:center;align-items:center;gap:clamp(8px,1.5vw,16px);
+  padding:clamp(6px,1vh,12px) clamp(12px,2vw,24px);
+  background:rgba(0,0,0,0.35);border-top:1px solid var(--border);
+  flex-shrink:0;flex-wrap:wrap;
+}
+.lf-row{display:flex;gap:clamp(6px,1vw,10px);align-items:center}
+.life{width:clamp(10px,1.4vw,16px);height:clamp(10px,1.4vw,16px);border-radius:50%;background:var(--red);transition:opacity .3s,transform .3s}
+.life.dead{opacity:0.15;transform:scale(0.7)}
+.bonus-tag{
+  background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);
+  border-radius:50px;padding:3px 12px;font-size:clamp(9px,1vw,11px);color:var(--gold);font-weight:700;letter-spacing:1px;
+}
+
+/* ========= RESULT ========= */
+#s-result{gap:2vh;padding:2vh 4vw}
+.res-crown{font-size:clamp(40px,7vw,90px);animation:crownBounce .7s cubic-bezier(.34,1.56,.64,1)}
+@keyframes crownBounce{from{transform:scale(0) rotate(-15deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.res-title{font-family:'Bebas Neue',cursive;font-size:clamp(28px,5.5vw,72px);text-align:center;line-height:1}
+.res-grade{
+  font-family:'Bebas Neue',cursive;font-size:clamp(40px,7vw,96px);
+  -webkit-text-stroke:2px var(--gold);color:transparent;
+  line-height:1;text-align:center;
+}
+.res-stats{display:flex;gap:clamp(8px,1.5vw,16px);flex-wrap:wrap;justify-content:center}
+.rs{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:clamp(10px,1.5vh,18px) clamp(16px,2.5vw,28px);text-align:center;min-width:100px}
+.rs-v{font-family:'Bebas Neue',cursive;font-size:clamp(22px,3.5vw,44px)}
+.rs-l{font-size:clamp(8px,0.9vw,11px);color:rgba(255,255,255,0.3);letter-spacing:2px;margin-top:2px}
+.rs.gold .rs-v{color:var(--gold)}
+.rs.grn .rs-v{color:var(--green)}
+.rs.purp .rs-v{color:var(--purple)}
+.rs.pink .rs-v{color:var(--pink)}
+
+.score-breakdown{
+  width:min(600px,90%);background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:clamp(12px,1.8vh,20px) clamp(16px,2.5vw,28px);
+  max-height:25vh;overflow-y:auto;
+}
+.score-breakdown::-webkit-scrollbar{width:4px}
+.score-breakdown::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+.sb-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:clamp(10px,1.2vw,13px)}
+.sb-row:last-child{border-bottom:none}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sb-song{flex:1;color:rgba(255,255,255,0.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-pts{font-weight:700;font-size:clamp(11px,1.3vw,15px);white-space:nowrap}
+.sb-pts.ok{color:var(--green)}.sb-pts.no{color:var(--red)}.sb-pts.fast{color:var(--gold)}
+
+.res-btns{display:flex;gap:clamp(10px,1.5vw,16px);flex-wrap:wrap;justify-content:center}
+.rb{border-radius:12px;padding:clamp(10px,1.5vh,16px) clamp(24px,3.5vw,48px);
+  font-family:'Bebas Neue',cursive;font-size:clamp(14px,1.8vw,22px);letter-spacing:2px;
+  cursor:pointer;transition:all .2s;border:none}
+.rb.primary{background:var(--gold);color:#0a0a0f}
+.rb.primary:hover{background:#fbbf24;transform:scale(1.05)}
+.rb.secondary{background:transparent;border:1.5px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6)}
+.rb.secondary:hover{border-color:rgba(255,255,255,0.5);color:#fff;transform:scale(1.03)}
+
+/* confetti */
+#cf{position:fixed;inset:0;pointer-events:none;z-index:20;overflow:hidden}
+.cdot{position:absolute;animation:cffall linear forwards}
+@keyframes cffall{0%{opacity:1;transform:translateY(-5vh) rotate(0)}100%{opacity:0;transform:translateY(110vh) rotate(900deg)}}
+
+/* timer pulse */
+@keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+/* hud timer colors */
+.t-ok{color:#fff}
+.t-warn{color:var(--gold);animation:timerPulse .5s ease infinite}
+.t-danger{color:var(--red);animation:timerPulse .3s ease infinite}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<div id="cf"></div>
+
+<div id="app">
+
+  <!-- MENU -->
+  <div class="screen active" id="s-menu">
+    <div class="logo"><span class="b1">BEAT</span><span class="b2">QUIZ</span><span class="b3">!</span></div>
+    <div class="logo-sub">Ultimate Music Knowledge Battle</div>
+    <div class="stats-preview" id="menu-stats">
+      <div class="sp-box"><div class="sp-v" id="ms-hs">0</div><div class="sp-l">HIGHSCORE</div></div>
+      <div class="sp-box"><div class="sp-v" id="ms-played">0</div><div class="sp-l">PLAYED</div></div>
+      <div class="sp-box"><div class="sp-v" id="ms-acc">0%</div><div class="sp-l">ACCURACY</div></div>
+    </div>
+    <div style="font-size:clamp(11px,1.2vw,14px);color:rgba(255,255,255,0.4);letter-spacing:2px;margin-top:1.5vh">PILIH MODE</div>
+    <div class="menu-cards" id="mode-cards">
+      <div class="mode-card selected" data-mode="normal">
+        <span class="mode-icon">🎵</span>
+        <div class="mode-name">Normal</div>
+        <div class="mode-desc">15 detik/soal • 3 nyawa</div>
+      </div>
+      <div class="mode-card" data-mode="rush">
+        <span class="mode-icon">⚡</span>
+        <div class="mode-name">Rush</div>
+        <div class="mode-desc">8 detik/soal • 1 nyawa</div>
+      </div>
+      <div class="mode-card" data-mode="chill">
+        <span class="mode-icon">🌊</span>
+        <div class="mode-name">Chill</div>
+        <div class="mode-desc">30 detik/soal • tak terbatas</div>
+      </div>
+    </div>
+    <button class="start-btn" id="startBtn">MULAI GAME</button>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="s-game">
+    <div class="topbar">
+      <div class="topbar-q" id="q-label">1 / 12</div>
+      <div class="prog-wrap"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+      <div class="topbar-streak" id="streak-display">🔥 0</div>
+      <div class="topbar-score" id="score-display">0</div>
+      <div class="topbar-timer t-ok" id="timer-display">15</div>
+    </div>
+
+    <div class="game-body">
+      <div class="artist-badge" id="artist-badge">
+        <div class="artist-dot" id="artist-dot" style="background:var(--gold)"></div>
+        <div class="artist-label" id="artist-label">JUSTIN BIEBER</div>
+      </div>
+      <div class="song-display">
+        <img class="song-thumb" id="song-thumb" src="" alt="album">
+        <div>
+          <div class="song-title" id="song-title">Lagu</div>
+          <div class="song-hint" id="song-hint">Loading...</div>
+        </div>
+        <div class="eq"><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="q-label">SIAPA PENCIPTANYA?</div>
+      <div class="choices" id="choices"></div>
+      <div class="feedback-banner" id="fb-banner"></div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="lf-row" id="lives-row"></div>
+      <div class="bonus-tag" id="bonus-tag" style="opacity:0">⚡ BONUS x2</div>
+      <div style="font-size:clamp(9px,1vw,11px);color:rgba(255,255,255,0.25);letter-spacing:2px" id="mode-label">NORMAL MODE</div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="s-result">
+    <div class="res-crown" id="res-crown">🏆</div>
+    <div class="res-title" id="res-title">QUIZ SELESAI!</div>
+    <div class="res-grade" id="res-grade">A+</div>
+    <div class="res-stats">
+      <div class="rs gold"><div class="rs-v" id="rs-score">0</div><div class="rs-l">SKOR</div></div>
+      <div class="rs grn"><div class="rs-v" id="rs-correct">0/12</div><div class="rs-l">BENAR</div></div>
+      <div class="rs purp"><div class="rs-v" id="rs-streak">0</div><div class="rs-l">MAX STREAK</div></div>
+      <div class="rs pink"><div class="rs-v" id="rs-acc">0%</div><div class="rs-l">AKURASI</div></div>
+    </div>
+    <div class="score-breakdown" id="score-breakdown"></div>
+    <div class="res-btns">
+      <button class="rb primary" id="playAgainBtn">MAIN LAGI</button>
+      <button class="rb secondary" id="menuBtn">MENU</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===================== DATA SONGS =====================
+const SONGS = [
+  // Justin Bieber
+  {title:"Baby",artist:"Justin Bieber",hint:"feat. Ludacris • 2010",color:"#60a5fa",img:"https://upload.wikimedia.org/wikipedia/id/d/d1/Babycoverart.jpg"},
+  {title:"Love Yourself",artist:"Justin Bieber",hint:"Purpose Album • 2015",color:"#60a5fa",img:"https://upload.wikimedia.org/wikipedia/id/0/0b/JustinBieberLoveYourself.png"},
+  {title:"Sorry",artist:"Justin Bieber",hint:"Purpose Album • 2015",color:"#60a5fa",img:"translate.google.com/website?sl=en&tl=id&hl=id&client=imgs&u=https://upload.wikimedia.org/wikipedia/en/d/dc/Justin_Bieber_-_Sorry_%2528Official_Single_Cover%2529.png"},
+  {title:"Peaches",artist:"Justin Bieber",hint:"feat. Daniel Caesar • 2021",color:"#60a5fa",img:"https://i.pinimg.com/736x/1b/00/a3/1b00a35ba8e099a7b2411f19f875259c.jpg"},
+  {title:"Ghost",artist:"Justin Bieber",hint:"Justice Album • 2021",color:"#60a5fa",img:"https://i.pinimg.com/736x/1b/00/a3/1b00a35ba8e099a7b2411f19f875259c.jpg"},
+  // Billie Eilish
+  {title:"bad guy",artist:"Billie Eilish",hint:"WHEN WE ALL FALL ASLEEP • 2019",color:"#34d399",img:"https://upload.wikimedia.org/wikipedia/en/3/3a/Billie_Eilish_-_When_We_All_Fall_Asleep%2C_Where_Do_We_Go%3F.png"},
+  {title:"Happier Than Ever",artist:"Billie Eilish",hint:"Album 2021",color:"#34d399",img:"https://upload.wikimedia.org/wikipedia/en/3/3a/Billie_Eilish_-_When_We_All_Fall_Asleep%2C_Where_Do_We_Go%3F.png"},
+  {title:"lovely",artist:"Billie Eilish",hint:"feat. Khalid • 2018",color:"#34d399",img:"https://upload.wikimedia.org/wikipedia/en/3/3a/Billie_Eilish_-_When_We_All_Fall_Asleep%2C_Where_Do_We_Go%3F.png"},
+  {title:"Ocean Eyes",artist:"Billie Eilish",hint:"Debut single • 2016",color:"#34d399",img:"https://upload.wikimedia.org/wikipedia/en/3/3a/Billie_Eilish_-_When_We_All_Fall_Asleep%2C_Where_Do_We_Go%3F.png"},
+  {title:"Therefore I Am",artist:"Billie Eilish",hint:"Single • 2020",color:"#34d399",img:"https://upload.wikimedia.org/wikipedia/en/3/3a/Billie_Eilish_-_When_We_All_Fall_Asleep%2C_Where_Do_We_Go%3F.png"},
+  // Juice WRLD
+  {title:"Lucid Dreams",artist:"Juice WRLD",hint:"Goodbye & Good Riddance • 2018",color:"#f472b6",img:"https://upload.wikimedia.org/wikipedia/en/0/09/Juice_Wrld-_Goodbye_%26_Good_Riddance.jpg"},
+  {title:"All Girls Are the Same",artist:"Juice WRLD",hint:"Debut album • 2018",color:"#f472b6",img:"https://upload.wikimedia.org/wikipedia/en/0/09/Juice_Wrld-_Goodbye_%26_Good_Riddance.jpg"},
+  {title:"Robbery",artist:"Juice WRLD",hint:"Death Race for Love • 2019",color:"#f472b6",img:"https://upload.wikimedia.org/wikipedia/en/0/09/Juice_Wrld-_Goodbye_%26_Good_Riddance.jpg"},
+  {title:"Righteous",artist:"Juice WRLD",hint:"Legends Never Die • 2020",color:"#f472b6",img:"https://upload.wikimedia.org/wikipedia/en/0/09/Juice_Wrld-_Goodbye_%26_Good_Riddance.jpg"},
+  {title:"Come & Go",artist:"Juice WRLD",hint:"feat. Marshmello • 2020",color:"#f472b6",img:"https://upload.wikimedia.org/wikipedia/en/0/09/Juice_Wrld-_Goodbye_%26_Good_Riddance.jpg"},
+  // Artis Indonesia
+  {title:"Hati-Hati di Jalan",artist:"Tulus",hint:"Album Manusia • 2022",color:"#f59e0b",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Tulus_Photo.jpg/220px-Tulus_Photo.jpg"},
+  {title:"Bunga",artist:"Tulus",hint:"Album Gajah • 2014",color:"#f59e0b",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Tulus_Photo.jpg/220px-Tulus_Photo.jpg"},
+  {title:"Ruang Sendiri",artist:"Tulus",hint:"Album Monokrom • 2017",color:"#f59e0b",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Tulus_Photo.jpg/220px-Tulus_Photo.jpg"},
+  {title:"Mungkin Hari Ini Esok Atau Nanti",artist:"Rizky Febian",hint:"Single Pop • 2019",color:"#a78bfa",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Rizky_Febian_2021.jpg/220px-Rizky_Febian_2021.jpg"},
+  {title:"Mantra Cinta",artist:"Rizky Febian",hint:"Single • 2021",color:"#a78bfa",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Rizky_Febian_2021.jpg/220px-Rizky_Febian_2021.jpg"},
+  {title:"Tentang Rindu",artist:"Virgoun",hint:"Single 2017",color:"#f59e0b",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Tulus_Photo.jpg/220px-Tulus_Photo.jpg"},
+  {title:"Salah Apa Aku",artist:"Judika",hint:"Single 2019",color:"#60a5fa",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Tulus_Photo.jpg/220px-Tulus_Photo.jpg"},
+  {title:"Kita Biasa",artist:"Tiara Andini",hint:"Debut Single • 2020",color:"#f472b6",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Tulus_Photo.jpg/220px-Tulus_Photo.jpg"},
+];
+
+const ALL_ARTISTS = ["Justin Bieber","Billie Eilish","Juice WRLD","Tulus","Rizky Febian","Virgoun","Judika","Tiara Andini"];
+const MODES = {
+  normal:{time:15,lives:3,label:"NORMAL MODE"},
+  rush:{time:8,lives:1,label:"RUSH MODE"},
+  chill:{time:30,lives:99,label:"CHILL MODE"}
+};
+
+// ===================== STATE =====================
+let mode = "normal";
+let questions = [], qIdx = 0, score = 0, streak = 0, maxStreak = 0;
+let lives = 3, timerVal = 0, timerInt = null, locked = false;
+let log = [], gamesPlayed = 0, totalCorrect = 0, totalQ = 0;
+let highScore = parseInt(localStorage.getItem('bq_hs')||'0');
+let totalPlayed = parseInt(localStorage.getItem('bq_played')||'0');
+let totalAcc = parseFloat(localStorage.getItem('bq_acc')||'0');
+
+// ===================== UTILS =====================
+function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
+function clamp(v,mn,mx){return Math.max(mn,Math.min(mx,v))}
+
+function buildQuestions(){
+  const pool = shuffle(SONGS).slice(0,12);
+  return pool.map(s=>{
+    const wrong = shuffle(ALL_ARTISTS.filter(a=>a!==s.artist)).slice(0,3);
+    const opts = shuffle([s.artist,...wrong]);
+    return {...s, options:opts, correct:s.artist};
+  });
+}
+
+// ===================== CANVAS BG =====================
+const cvs=document.getElementById('bg'),ctx2=cvs.getContext('2d');
+let W,H,pts=[];
+function resizeBg(){W=cvs.width=window.innerWidth;H=cvs.height=window.innerHeight;if(!pts.length)initPts()}
+function initPts(){pts=[];for(let i=0;i<Math.floor(W*H/7000);i++)pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.6+.4,a:Math.random()})}
+function drawBg(){
+  ctx2.clearRect(0,0,W,H);
+  ctx2.fillStyle='#06060f';ctx2.fillRect(0,0,W,H);
+  const t=Date.now()/5000;
+  [[.2,.45,.12,'rgba(83,74,183,.13)'],[.55,.55,.1,'rgba(167,139,250,.08)'],[.8,.35,.09,'rgba(245,158,11,.07)']].forEach(([rx,ry,rs,c],i)=>{
+    const x=W*(rx+Math.sin(t+i)*.06),y=H*(ry+Math.cos(t*.8+i)*.12);
+    const g=ctx2.createRadialGradient(x,y,0,x,y,W*rs+W*.2);
+    g.addColorStop(0,c);g.addColorStop(1,'transparent');
+    ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  });
+  pts.forEach((p,i)=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=W;if(p.x>W)p.x=0;
+    if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+    p.a=.25+.4*Math.sin(Date.now()/2200+i);
+    ctx2.beginPath();ctx2.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx2.fillStyle=`rgba(167,139,250,${p.a.toFixed(2)})`;ctx2.fill();
+    pts.forEach((p2,j)=>{
+      if(j<=i)return;
+      const dx=p.x-p2.x,dy=p.y-p2.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<W*.09){ctx2.beginPath();ctx2.moveTo(p.x,p.y);ctx2.lineTo(p2.x,p2.y);ctx2.strokeStyle=`rgba(83,74,183,${(.07*(1-d/(W*.09))).toFixed(3)})`;ctx2.lineWidth=.5;ctx2.stroke()}
+    });
+  });
+  requestAnimationFrame(drawBg);
+}
+window.addEventListener('resize',resizeBg);
+resizeBg();drawBg();
+
+// ===================== MENU =====================
+document.getElementById('ms-hs').textContent=highScore;
+document.getElementById('ms-played').textContent=totalPlayed;
+document.getElementById('ms-acc').textContent=Math.round(totalAcc)+'%';
+
+document.querySelectorAll('.mode-card').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-card').forEach(x=>x.classList.remove('selected'));
+    c.classList.add('selected');
+    mode=c.dataset.mode;
+  });
+});
+
+document.getElementById('startBtn').addEventListener('click',startGame);
+
+// ===================== GAME LOGIC =====================
+function startGame(){
+  questions=buildQuestions();qIdx=0;score=0;streak=0;maxStreak=0;log=[];
+  lives=MODES[mode].lives;locked=false;
+  showScreen('s-game');
+  document.getElementById('mode-label').textContent=MODES[mode].label;
+  buildLives();
+  loadQuestion();
+}
+
+function buildLives(){
+  const r=document.getElementById('lives-row');r.innerHTML='';
+  if(lives>=99){r.innerHTML='<span style="font-size:clamp(11px,1.2vw,13px);color:rgba(255,255,255,0.4);letter-spacing:2px">CHILL MODE</span>';return}
+  for(let i=0;i<MODES[mode].lives;i++){
+    const d=document.createElement('div');d.className='life';d.id='life-'+i;r.appendChild(d);
+  }
+}
+
+function updateLives(){
+  if(lives>=99)return;
+  const total=MODES[mode].lives;
+  for(let i=0;i<total;i++){
+    const el=document.getElementById('life-'+i);
+    if(el) el.classList.toggle('dead',i>=lives);
+  }
+}
+
+function loadQuestion(){
+  if(qIdx>=questions.length){endGame();return}
+  locked=false;
+  const q=questions[qIdx];
+  document.getElementById('q-label').textContent=(qIdx+1)+' / '+questions.length;
+  document.getElementById('prog').style.width=((qIdx/questions.length)*100)+'%';
+  document.getElementById('artist-label').textContent=q.artist.toUpperCase();
+  document.getElementById('artist-dot').style.background=q.color;
+  document.getElementById('song-thumb').src=q.img;
+  document.getElementById('song-title').textContent=q.title;
+  document.getElementById('song-hint').textContent=q.hint;
+  document.getElementById('fb-banner').textContent='';
+  document.getElementById('fb-banner').style.opacity='1';
+
+  const ch=document.getElementById('choices');ch.innerHTML='';
+  const letters=['A','B','C','D'];
+  q.options.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='choice';btn.dataset.ans=opt;
+    btn.innerHTML=`<span class="choice-letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.addEventListener('click',()=>answer(opt,btn));
+    ch.appendChild(btn);
+  });
+
+  document.getElementById('score-display').textContent=score;
+  document.getElementById('streak-display').textContent='🔥 '+streak;
+  updateBonus();
+  startTimer();
+}
+
+function updateBonus(){
+  const bt=document.getElementById('bonus-tag');
+  if(streak>=5){bt.style.opacity='1';bt.textContent='⚡ BONUS x3'}
+  else if(streak>=3){bt.style.opacity='1';bt.textContent='⚡ BONUS x2'}
+  else bt.style.opacity='0';
+}
+
+function startTimer(){
+  clearInterval(timerInt);
+  timerVal=MODES[mode].time;
+  const td=document.getElementById('timer-display');
+  td.textContent=timerVal;td.className='topbar-timer t-ok';
+  timerInt=setInterval(()=>{
+    timerVal--;
+    td.textContent=timerVal;
+    const pct=timerVal/MODES[mode].time;
+    td.className='topbar-timer '+(pct>.5?'t-ok':pct>.25?'t-warn':'t-danger');
+    if(timerVal<=0){clearInterval(timerInt);timeOut()}
+  },1000);
+}
+
+function timeOut(){
+  if(locked)return;locked=true;
+  lives=Math.max(0,lives-1);updateLives();
+  const q=questions[qIdx];
+  highlightCorrect(q.correct);
+  streak=0;
+  log.push({title:q.title,artist:q.artist,pts:0,result:'timeout'});
+  const fb=document.getElementById('fb-banner');
+  fb.textContent='⏱ WAKTU HABIS!';fb.style.color='#f59e0b';
+  if(lives<=0&&MODES[mode].lives<99){setTimeout(()=>endGame(),1200);return}
+  setTimeout(()=>{qIdx++;loadQuestion()},1400);
+}
+
+function answer(ans,btn){
+  if(locked)return;locked=true;clearInterval(timerInt);
+  const q=questions[qIdx];
+  const correct=ans===q.correct;
+  const timeBonusPct=timerVal/MODES[mode].time;
+  let pts=0;
+  if(correct){
+    let mult=1;
+    if(streak>=5)mult=3;
+    else if(streak>=3)mult=2;
+    pts=Math.round((100+timeBonusPct*50)*mult);
+    score+=pts;streak++;maxStreak=Math.max(maxStreak,streak);
+    btn.classList.add('correct');
+    const fb=document.getElementById('fb-banner');
+    const msgs=["KEREN!","GASSS!","TEPAT!","MANTAP!","GACOR!","GOAT!"];
+    fb.textContent=(streak>=3?'🔥 STREAK '+streak+'! ':'')+msgs[Math.floor(Math.random()*msgs.length)]+' +'+pts;
+    fb.style.color='#34d399';
+    if(streak>=3)fireConfettiSmall();
+    log.push({title:q.title,artist:q.artist,pts,result:'correct',fast:timeBonusPct>.7});
+  } else {
+    btn.classList.add('wrong');
+    lives=Math.max(0,lives-1);updateLives();
+    highlightCorrect(q.correct);
+    streak=0;
+    const fb=document.getElementById('fb-banner');
+    const wrongs=["SALAH KOCAK!","ADUH CUPU, BUKAN ITU KOCAK!","HAMPIR... BUKAN SIH!","GAS LAGI BRO!"];
+    fb.textContent=wrongs[Math.floor(Math.random()*wrongs.length)];
+    fb.style.color='#f87171';
+    log.push({title:q.title,artist:q.artist,pts:0,result:'wrong'});
+  }
+  document.querySelectorAll('.choice').forEach(c=>c.classList.add('locked'));
+  document.getElementById('score-display').textContent=score;
+  document.getElementById('streak-display').textContent='🔥 '+streak;
+  updateBonus();
+  if(!correct&&lives<=0&&MODES[mode].lives<99){setTimeout(()=>endGame(),1400);return}
+  setTimeout(()=>{qIdx++;loadQuestion()},correct?1200:1500);
+}
+
+function highlightCorrect(correct){
+  document.querySelectorAll('.choice').forEach(c=>{
+    if(c.dataset.ans===correct)c.classList.add('correct');
+    c.classList.add('locked');
+  });
+}
+
+// ===================== END GAME =====================
+function endGame(){
+  clearInterval(timerInt);
+  const correct=log.filter(l=>l.result==='correct').length;
+  const acc=Math.round((correct/questions.length)*100);
+  if(score>highScore){highScore=score;localStorage.setItem('bq_hs',score)}
+  totalPlayed++;gamesPlayed++;totalCorrect+=correct;totalQ+=questions.length;
+  const overallAcc=Math.round((totalCorrect/totalQ)*100);
+  localStorage.setItem('bq_played',totalPlayed);
+  localStorage.setItem('bq_acc',overallAcc);
+
+  document.getElementById('rs-score').textContent=score;
+  document.getElementById('rs-correct').textContent=correct+'/'+questions.length;
+  document.getElementById('rs-streak').textContent=maxStreak;
+  document.getElementById('rs-acc').textContent=acc+'%';
+
+  const grade=acc>=90?'S':acc>=75?'A':acc>=60?'B':acc>=40?'C':'D';
+  const crowns={S:'👑',A:'🏆',B:'🎵',C:'😅',D:'💀'};
+  const titles={S:'GACOR!',A:'KEREN BANGET!',B:'LUMAYAN NIH!',C:'BELAJAR LAGI!',D:'WKWKWK GAS LAGI!'};
+  document.getElementById('res-grade').textContent=grade;
+  document.getElementById('res-crown').textContent=crowns[grade];
+  document.getElementById('res-title').textContent=titles[grade];
+
+  const bd=document.getElementById('score-breakdown');bd.innerHTML='';
+  log.forEach(l=>{
+    const row=document.createElement('div');row.className='sb-row';
+    const col=l.result==='correct'?'#34d399':'#f87171';
+    const icon=l.result==='correct'?'✓':l.result==='timeout'?'⏱':'✗';
+    const ptsTxt=l.result==='correct'?'+'+l.pts:(l.result==='timeout'?'TIMEOUT':'SALAH');
+    row.innerHTML=`<div class="sb-dot" style="background:${col}"></div><span class="sb-song">${icon} ${l.title} — ${l.artist}</span><span class="sb-pts ${l.result==='correct'?'ok':'no'}">${ptsTxt}</span>`;
+    bd.appendChild(row);
+  });
+
+  if(acc>=75) fireConfetti();
+  showScreen('s-result');
+  document.getElementById('ms-hs').textContent=highScore;
+  document.getElementById('ms-played').textContent=totalPlayed;
+  document.getElementById('ms-acc').textContent=Math.round(overallAcc)+'%';
+}
+
+document.getElementById('playAgainBtn').addEventListener('click',startGame);
+document.getElementById('menuBtn').addEventListener('click',()=>showScreen('s-menu'));
+
+// ===================== CONFETTI =====================
+function fireConfetti(){
+  const c=document.getElementById('cf');
+  const cols=['#f59e0b','#34d399','#a78bfa','#f87171','#60a5fa','#f472b6','#fff'];
+  for(let i=0;i<100;i++){
+    const d=document.createElement('div');d.className='cdot';
+    const sz=Math.random()*10+4;
+    d.style.cssText=`width:${sz}px;height:${sz}px;border-radius:${Math.random()>.5?'50%':'3px'};background:${cols[i%7]};left:${Math.random()*100}%;top:-5%;animation-duration:${(Math.random()*1.5+1).toFixed(2)}s;animation-delay:${(Math.random()*.8).toFixed(2)}s`;
+    c.appendChild(d);
+  }
+  setTimeout(()=>c.innerHTML='',4000);
+}
+function fireConfettiSmall(){
+  const c=document.getElementById('cf');
+  const cols=['#f59e0b','#34d399','#a78bfa'];
+  for(let i=0;i<30;i++){
+    const d=document.createElement('div');d.className='cdot';
+    const sz=Math.random()*6+3;
+    d.style.cssText=`width:${sz}px;height:${sz}px;border-radius:50%;background:${cols[i%3]};left:${30+Math.random()*40}%;top:20%;animation-duration:${(Math.random()*.8+.6).toFixed(2)}s;animation-delay:${(Math.random()*.3).toFixed(2)}s`;
+    c.appendChild(d);
+  }
+  setTimeout(()=>c.innerHTML='',2500);
+}
+
+// ===================== SCREEN SWITCH =====================
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
